@@ -1,0 +1,213 @@
+#!/usr/bin/python3
+" dunno"
+
+# pylint: disable=too-few-public-methods
+# pylint: disable=broad-except
+
+import pdb
+import sys
+import pickle
+import time
+
+class Vertex(object):
+    """ This represents a vertex """
+    def __init__(self, x, y, z):
+        self.x = x
+        self.y = y
+        self.z = z
+
+    def __eq__(self, other):
+        if other.z != self.z:
+            return False
+        return True
+
+    def __lt__(self, other):
+        if other.z <= self.z:
+            return False
+        return True
+
+    def __str__(self):
+        return "(%0.3f,%0.3f,%0.3f)" % (self.x, self.y, self.z)
+
+    def __repr__(self):
+        return str(self)
+
+class Face(object):
+    """ This represents a face """
+    def __init__(self, v0, v1, v2):
+        self.v0 = v0
+        self.v1 = v1
+        self.v2 = v2
+
+    def __str__(self):
+        return "Face(%s,%s,%s)" % (self.v0, self.v1, self.v2)
+
+    def __repr__(self):
+        return str(self)
+
+    @property
+    def min(self):
+        "minimum"
+        return min(self.v0.z, self.v1.z, self.v2.z)
+
+    @property
+    def max(self):
+        "maximum"
+        return max(self.v0.z, self.v1.z, self.v2.z)
+
+    @property
+    def avg(self):
+        "average"
+        return (self.v0.z + self.v1.z + self.v2.z) / 3
+
+    def __lt__(self, other):
+        if self.avg == other.avg:
+            if self.min > other.min:
+                return False
+            return True
+        if self.avg > other.avg:
+            return False
+
+        return True
+
+    def __gt__(self, other):
+        if self.avg == other.avg:
+            if self.min < other.min:
+                return False
+            return True
+        if self.avg < other.avg:
+            return False
+        return True
+
+    def __eq__(self, other):
+        if self.avg != other.avg:
+            return False
+        if self.min != other.min:
+            return False
+        if self.max != other.max:
+            return False
+        return True
+
+class Scaler(object):
+    "this scales"
+    def __init__(self, lower, upper, minimum=0, maximum=300):
+        self.a = minimum - lower
+        self.m = (maximum - minimum) / (upper - lower)
+
+    def __call__(self, vertex):
+        try:
+            return Vertex((vertex.x + self.a) * self.m,
+                          (vertex.y + self.a) * self.m,
+                          (vertex.z + self.a) * self.m)
+        except Exception:
+            pdb.set_trace()
+
+print("reading files")
+vf = open("tmp1-vertices.obj", "r")
+ff = open("tmp1-faces.obj", "r")
+
+vl = vf.readlines()
+fl = ff.readlines()
+
+del vf
+del ff
+
+print("read %d vertices, %d faces" % (len(vl), len(fl)))
+print("%s loading vertices" % (time.asctime(),))
+vl2 = vl
+vl = []
+min_xy = None
+max_xy = None
+i = 0
+while vl2:
+    if int(i) % 1000 == 0:
+        sys.stdout.write("\r%s" % (i,))
+    i = int(i) + 1
+    v = vl2.pop(0)
+    i, x, y, z = v.split(' ')
+    x = float(x)
+    y = float(y)
+    z = float(z)
+
+    vl.append(Vertex(x, y, z))
+
+    if min_xy is None or x < min_xy:
+        min_xy = x
+    if max_xy is None or x > max_xy:
+        max_xy = x
+    if y < min_xy:
+        min_xy = y
+    if y > max_xy:
+        max_xy = y
+print("\rloaded %d vertices, min is %f max is %f" % (len(vl), min_xy, max_xy))
+
+scale = Scaler(lower=min_xy, upper=max_xy)
+print("scale(x) = (x + %f) * %f" % (scale.a, scale.m))
+
+del vl2
+vl2 = vl
+vl = [None,]
+i = 0
+min_xy = None
+max_xy = None
+print("%s scaling vertices" % (time.asctime(),))
+while vl2:
+    if int(i) % 1000 == 0:
+        sys.stdout.write("\r%s" % (i,))
+    i = int(i) + 1
+    v = vl2.pop(0)
+    v = scale(v)
+    vl.append(v)
+    x = v.x
+    y = v.y
+    if min_xy is None or x < min_xy:
+        min_xy = x
+    if max_xy is None or x > max_xy:
+        max_xy = x
+    if y < min_xy:
+        min_xy = y
+    if y > max_xy:
+        max_xy = y
+del vl2
+print("\rscaled %d vertices: min is %f max is %f" % (len(vl), min_xy, max_xy))
+
+print("%s loading faces" % (time.asctime(),))
+fl2 = fl
+fl = []
+i = 0
+while fl2:
+    if int(i) % 1000 == 0:
+        sys.stdout.write("\r%s" % (i,))
+    i = int(i) + 1
+    f = fl2.pop(0)
+    try:
+        t, v0, v1, v2 = f.split(' ')
+    except Exception:
+        pdb.set_trace()
+    v0 = vl[int(v0)]
+    v1 = vl[int(v1)]
+    v2 = vl[int(v2)]
+    fl.append(Face(v0, v1, v2))
+print("\r%s loaded %d faces" % (time.asctime(), len(fl)))
+
+del fl2
+
+output = open("tmp1.pickle", "wb")
+pickle.dump(fl, output)
+output.close()
+del output
+
+print("sorting faces")
+fl.sort()
+
+output = open("tmp1-sorted.pickle", "wb")
+pickle.dump(fl, output)
+output.close()
+del output
+
+for f in fl:
+    if f.min <= 61.388298 and f.max >= 61.388298:
+        s = "*"
+    else:
+        s = " "
+    print("%0.3f %s %0.3f %s" % (f.min, s, f.max, f))

@@ -1,0 +1,118 @@
+#!/usr/bin/python3
+
+import sys
+import pickle
+
+class Vertex(object):
+    def __init__(self, x, y, z):
+        self.x = x
+        self.y = y
+        self.z = z
+
+    def __eq__(self, other):
+        if other.z != self.z:
+            return False
+        return True
+
+    def __lt__(self, other):
+        if other.z <= self.z:
+            return False
+        return True
+
+    def __str__(self):
+        return "(%0.3f, %0.3f, %0.3f)" % (self.x, self.y, self.z)
+
+    def __repr__(self):
+        return str(self)
+
+class Face(object):
+    def __init__(self, v0, v1, v2):
+        self.v0 = v0
+        self.v1 = v1
+        self.v2 = v2
+
+    def __str__(self):
+        return "Face(%s,%s,%s)" % (self.v0, self.v1, self.v2)
+
+    def __repr__(self):
+        return str(self)
+
+    @property
+    def min(self):
+        return min(self.v0.z, self.v1.z, self.v2.z)
+
+    @property
+    def max(self):
+        return max(self.v0.z, self.v1.z, self.v2.z)
+
+    @property
+    def avg(self):
+        return (self.v0.z + self.v1.z + self.v2.z) / 3
+
+    def __lt__(self, other):
+        if self.avg == other.avg:
+            if self.min > other.min:
+                return False
+            return True
+        if self.avg > other.avg:
+            return False
+
+        return True
+
+    def __gt__(self, other):
+        if self.avg == other.avg:
+            if self.min < other.min:
+                return False
+            return True
+        if self.avg < other.avg:
+            return False
+        return True
+
+    def __eq__(self, other):
+        if self.avg != other.avg:
+            return False
+        if self.min != other.min:
+            return False
+        if self.max != other.max:
+            return False
+        return True
+
+class Scaler(object):
+    def __init__(self, lower, upper, minimum=0, maximum=300):
+        self.a = minimum - lower
+        self.m = (maximum - minimum) / (upper - lower)
+
+    def __call__(self, vertex):
+        try:
+            return Vertex((vertex.x + self.a) * self.m,
+                      (vertex.y + self.a) * self.m,
+                      (vertex.z + self.a) * self.m)
+        except:
+            pdb.set_trace()
+            pass
+
+if __name__ == '__main__':
+    def usage(ret):
+        str = "usage: facereduce <pct> <infile> <outfile>\n"
+        if ret == 0:
+            sys.stdout.write(str)
+        else:
+            sys.stderr.write(str)
+        sys.exit(ret)
+
+    if "-h" in sys.argv or "--help" in sys.argv or "-?" in sys.argv:
+        usage(0)
+    elif len(sys.argv) != 4:
+        usage(1)
+
+    pct = sys.argv[1]
+    infile = sys.argv[2]
+    outfile = sys.argv[3]
+
+    f = open(infile, "r")
+    try:
+        faces = pickle.load(f)
+        del f
+    else:
+        facelist = f.readlines()
+        del f

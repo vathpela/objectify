@@ -1,2 +1,4 @@
 *.obj
+*.mtl
 *.pickle
+__pycache__

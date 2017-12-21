@@ -1,0 +1,26 @@
+#!/usr/bin/python3
+" dunno"
+
+# pylint: disable=too-few-public-methods
+# pylint: disable=broad-except
+
+import sys
+import pickle
+import time
+
+print("reading files (%s)" % (time.ctime()))
+outfile = open(sys.argv[2], "wb")
+infile = open(sys.argv[1], "rb")
+model = pickle.load(infile)
+
+print("read all the faces (%s)" % (time.ctime()))
+
+for v in model.vertices:
+    s = "v %f %f %f\n" % (v.x, v.y, v.z)
+    outfile.write(s.encode("utf-8"))
+for f in model.faces:
+    s = "f %d %d %d\n" % (f.i0, f.i1, f.i2)
+    outfile.write(s.encode("utf-8"))
+outfile.close()
+
+print("done (%s)" % (time.ctime()))

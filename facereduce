@@ -1,9 +1,16 @@
 #!/usr/bin/python3
 
+"reduce the number of faces in an object"
+
+# pylint: disable=broad-except
+# pylint: disable=too-few-public-methods
+
 import sys
 import pickle
 
 class Vertex(object):
+    "a vertex"
+    __slots__ = ['x', 'y', 'z']
     def __init__(self, x, y, z):
         self.x = x
         self.y = y
@@ -26,6 +33,8 @@ class Vertex(object):
         return str(self)
 
 class Face(object):
+    "a face"
+    __slots__ = ['v0', 'v1', 'v2']
     def __init__(self, v0, v1, v2):
         self.v0 = v0
         self.v1 = v1
@@ -39,14 +48,17 @@ class Face(object):
 
     @property
     def min(self):
+        "min"
         return min(self.v0.z, self.v1.z, self.v2.z)
 
     @property
     def max(self):
+        "max"
         return max(self.v0.z, self.v1.z, self.v2.z)
 
     @property
     def avg(self):
+        "avg"
         return (self.v0.z + self.v1.z + self.v2.z) / 3
 
     def __lt__(self, other):
@@ -78,6 +90,7 @@ class Face(object):
         return True
 
 class Scaler(object):
+    "scaler"
     def __init__(self, lower, upper, minimum=0, maximum=300):
         self.a = minimum - lower
         self.m = (maximum - minimum) / (upper - lower)
@@ -85,19 +98,20 @@ class Scaler(object):
     def __call__(self, vertex):
         try:
             return Vertex((vertex.x + self.a) * self.m,
-                      (vertex.y + self.a) * self.m,
-                      (vertex.z + self.a) * self.m)
-        except:
+                          (vertex.y + self.a) * self.m,
+                          (vertex.z + self.a) * self.m)
+        except Exception:
+            import pdb
             pdb.set_trace()
-            pass
 
 if __name__ == '__main__':
     def usage(ret):
-        str = "usage: facereduce <pct> <infile> <outfile>\n"
+        "usage"
+        msg = "usage: facereduce <pct> <infile> <outfile>\n"
         if ret == 0:
-            sys.stdout.write(str)
+            sys.stdout.write(msg)
         else:
-            sys.stderr.write(str)
+            sys.stderr.write(msg)
         sys.exit(ret)
 
     if "-h" in sys.argv or "--help" in sys.argv or "-?" in sys.argv:
@@ -110,9 +124,7 @@ if __name__ == '__main__':
     outfile = sys.argv[3]
 
     f = open(infile, "r")
-    try:
-        faces = pickle.load(f)
-        del f
-    else:
-        facelist = f.readlines()
-        del f
+    faces = pickle.load(f)
+    del f
+    #facelist = f.readlines()
+    #del f

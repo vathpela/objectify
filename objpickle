@@ -1,0 +1,23 @@
+#!/usr/bin/python3
+" dunno"
+
+# pylint: disable=too-few-public-methods
+# pylint: disable=broad-except
+
+import sys
+import pickle
+import time
+
+from xyz import parse
+
+print("reading files (%s)" % (time.ctime()))
+output = open(sys.argv[2], "wb")
+obj = parse(sys.argv[1])
+
+print("read all the faces (%s)" % (time.ctime()))
+
+pickle.dump(obj, output)
+output.close()
+del output
+
+print("done (%s)" % (time.ctime()))
